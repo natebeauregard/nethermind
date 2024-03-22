@@ -9,7 +9,7 @@ using Nethermind.Core;
 using Nethermind.Int256;
 using Nethermind.Core.Crypto;
 
-namespace Nethermind.Evm.Tracing.GethStyle.JavaScript;
+namespace Nethermind.Evm.Tracing.GethStyle.Custom.JavaScript;
 
 public sealed class GethLikeJavaScriptTxTracer : GethLikeTxTracer, ITxTracer
 {
@@ -59,7 +59,7 @@ public sealed class GethLikeJavaScriptTxTracer : GethLikeTxTracer, ITxTracer
     public override GethLikeTxTrace BuildResult()
     {
         GethLikeTxTrace result = base.BuildResult();
-        result.CustomTracerResult = new GethLikeJavaScriptTrace() { Value = _tracer.result(_ctx, _db) };
+        result.CustomTracerResult = new GethLikeCustomTrace() { Value = _tracer.result(_ctx, _db) };
         _resultConstructed = true;
         return result;
     }
@@ -121,32 +121,9 @@ public sealed class GethLikeJavaScriptTxTracer : GethLikeTxTracer, ITxTracer
     public override void ReportOperationError(EvmExceptionType error)
     {
         base.ReportOperationError(error);
-        _log.error = GetJavaScriptErrorDescription(error);
+        _log.error = error.GetCustomErrorDescription();
         _tracer.fault(_log, _db);
     }
-
-    private static string? GetJavaScriptErrorDescription(EvmExceptionType evmExceptionType) =>
-        evmExceptionType switch
-        {
-            EvmExceptionType.None => null,
-            EvmExceptionType.BadInstruction => "invalid instruction",
-            EvmExceptionType.StackOverflow => "max call depth exceeded",
-            EvmExceptionType.StackUnderflow => "stack underflow",
-            EvmExceptionType.OutOfGas => "out of gas",
-            EvmExceptionType.GasUInt64Overflow => "gas uint64 overflow",
-            EvmExceptionType.InvalidSubroutineEntry => "invalid jump destination",
-            EvmExceptionType.InvalidSubroutineReturn => "invalid jump destination",
-            EvmExceptionType.InvalidJumpDestination => "invalid jump destination",
-            EvmExceptionType.AccessViolation => "return data out of bounds",
-            EvmExceptionType.StaticCallViolation => "write protection",
-            EvmExceptionType.PrecompileFailure => "precompile error",
-            EvmExceptionType.TransactionCollision => "contract address collision",
-            EvmExceptionType.NotEnoughBalance => "insufficient balance for transfer",
-            EvmExceptionType.Other => "error",
-            EvmExceptionType.Revert => "execution reverted",
-            EvmExceptionType.InvalidCode => "invalid code: must not begin with 0xef",
-            _ => "error"
-        };
 
     public override void ReportActionEnd(long gas, Address deploymentAddress, ReadOnlyMemory<byte> deployedCode)
     {
@@ -165,13 +142,13 @@ public sealed class GethLikeJavaScriptTxTracer : GethLikeTxTracer, ITxTracer
     public void ReportActionRevert(long gasLeft, byte[] output)
     {
         base.ReportActionError(EvmExceptionType.Revert);
-        InvokeExit(gasLeft, output, GetJavaScriptErrorDescription(EvmExceptionType.Revert));
+        InvokeExit(gasLeft, output, GethLikeCustomErrorDescription.GetCustomErrorDescription(EvmExceptionType.Revert));
     }
 
     public override void ReportActionError(EvmExceptionType evmExceptionType)
     {
         base.ReportActionError(evmExceptionType);
-        InvokeExit(0, Array.Empty<byte>(), GetJavaScriptErrorDescription(evmExceptionType));
+        InvokeExit(0, Array.Empty<byte>(), GethLikeCustomErrorDescription.GetCustomErrorDescription(evmExceptionType));
     }
 
     private void InvokeExit(long gas, ReadOnlyMemory<byte> output, string? error = null)

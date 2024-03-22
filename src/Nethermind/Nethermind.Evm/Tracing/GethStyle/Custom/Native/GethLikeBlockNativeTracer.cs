@@ -2,28 +2,22 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 
 
-using System;
-using System.Collections.Generic;
-using System.Threading;
 using Nethermind.Core;
-using Nethermind.Core.Collections;
 using Nethermind.Core.Specs;
 using Nethermind.Int256;
 using Nethermind.State;
+namespace Nethermind.Evm.Tracing.GethStyle.Custom.Native;
 
-namespace Nethermind.Evm.Tracing.GethStyle.JavaScript;
-
-public class GethLikeBlockJavaScriptTracer : BlockTracerBase<GethLikeTxTrace, GethLikeJavaScriptTxTracer>, IDisposable
+public class GethLikeBlockNativeTracer : BlockTracerBase<GethLikeTxTrace, GethLikeTxTracer>
 {
     private readonly IReleaseSpec _spec;
     private readonly GethTraceOptions _options;
     private readonly Context _ctx;
     private readonly Db _db;
     private int _index;
-    private ArrayPoolList<IDisposable>? _engines;
     private UInt256 _baseFee;
 
-    public GethLikeBlockJavaScriptTracer(IWorldState worldState, IReleaseSpec spec, GethTraceOptions options) : base(options.TxHash)
+    public GethLikeBlockNativeTracer(IWorldState worldState, IReleaseSpec spec, GethTraceOptions options) : base(options.TxHash)
     {
         _spec = spec;
         _options = options;
@@ -33,19 +27,16 @@ public class GethLikeBlockJavaScriptTracer : BlockTracerBase<GethLikeTxTrace, Ge
 
     public override void StartNewBlockTrace(Block block)
     {
-        _engines = new ArrayPoolList<IDisposable>(block.Transactions.Length + 1);
         _ctx.block = block.Number;
         _ctx.BlockHash = block.Hash;
         _baseFee = block.BaseFeePerGas;
         base.StartNewBlockTrace(block);
     }
 
-    protected override GethLikeJavaScriptTxTracer OnStart(Transaction? tx)
+    protected override GethLikeTxTracer OnStart(Transaction? tx)
     {
         SetTransactionCtx(tx);
-        Engine engine = new(_spec);
-        _engines?.Add(engine);
-        return new GethLikeJavaScriptTxTracer(this, engine, _db, _ctx, _options);
+        return GethLikeNativeTracerFactory.CreateNativeTracer(_db, _ctx, _spec, _options);
     }
 
     private void SetTransactionCtx(Transaction? tx)
@@ -64,24 +55,7 @@ public class GethLikeBlockJavaScriptTracer : BlockTracerBase<GethLikeTxTrace, Ge
         }
     }
 
-    public override void EndBlockTrace()
-    {
-        base.EndBlockTrace();
-        Engine.CurrentEngine = null;
-        ArrayPoolList<IDisposable>? list = Interlocked.Exchange(ref _engines, null);
-        list?.Dispose();
-    }
-
     protected override bool ShouldTraceTx(Transaction? tx) => base.ShouldTraceTx(tx) && tx is not null;
 
-    protected override GethLikeTxTrace OnEnd(GethLikeJavaScriptTxTracer txTracer) => txTracer.BuildResult();
-    public void Dispose()
-    {
-        ArrayPoolList<IDisposable>? list = Interlocked.Exchange(ref _engines, null);
-        if (list is not null)
-        {
-            list.ForEach(e => e.Dispose());
-            list.Dispose();
-        }
-    }
+    protected override GethLikeTxTrace OnEnd(GethLikeTxTracer txTracer) => txTracer.BuildResult();
 }

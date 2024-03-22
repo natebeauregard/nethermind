@@ -9,9 +9,10 @@ using Microsoft.ClearScript.JavaScript;
 using Nethermind.Core;
 using Nethermind.Core.Crypto;
 using Nethermind.Core.Extensions;
+using Nethermind.Evm.Tracing.GethStyle.Custom.JavaScript;
 using Nethermind.Int256;
 
-namespace Nethermind.Evm.Tracing.GethStyle.JavaScript;
+namespace Nethermind.Evm.Tracing.GethStyle.Custom;
 
 public static class JavaScriptConverter
 {
