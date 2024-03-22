@@ -25,8 +25,7 @@ namespace Nethermind.Evm.Tracing.GethStyle.Custom.Native.Tracers;
 //   }
 public sealed class Native4ByteTracer : GethLikeNativeTxTracer
 {
-    private int _depth = -1;
-    private Dictionary<string, int> _4ByteIds = new();
+    private readonly Dictionary<string, int> _4ByteIds = new();
     private Instruction _op;
 
     public Native4ByteTracer(
@@ -50,9 +49,6 @@ public sealed class Native4ByteTracer : GethLikeNativeTxTracer
 
     public override void ReportAction(long gas, UInt256 value, Address from, Address to, ReadOnlyMemory<byte> input, ExecutionType callType, bool isPrecompileCall = false)
     {
-        // TODO: consider extracting out _depth calls to a generic class
-        _depth++;
-
         base.ReportAction(gas, value, from, to, input, callType, isPrecompileCall);
 
         if (_depth == 0)
@@ -68,25 +64,6 @@ public sealed class Native4ByteTracer : GethLikeNativeTxTracer
     public override void StartOperation(int depth, long gas, Instruction opcode, int pc, bool isPostMerge = false)
     {
         _op = opcode;
-    }
-
-
-    public override void ReportActionEnd(long gas, Address deploymentAddress, ReadOnlyMemory<byte> deployedCode)
-    {
-        base.ReportActionEnd(gas, deploymentAddress, deployedCode);
-        _depth--;
-    }
-
-    public override void ReportActionEnd(long gas, ReadOnlyMemory<byte> output)
-    {
-        base.ReportActionEnd(gas, output);
-        _depth--;
-    }
-
-    public override void ReportActionError(EvmExceptionType evmExceptionType)
-    {
-        base.ReportActionError(evmExceptionType);
-        _depth--;
     }
 
     private void CaptureStart(ReadOnlyMemory<byte> input)
