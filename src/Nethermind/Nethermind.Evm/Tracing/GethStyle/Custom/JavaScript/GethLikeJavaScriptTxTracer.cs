@@ -9,7 +9,7 @@ using Nethermind.Core;
 using Nethermind.Int256;
 using Nethermind.Core.Crypto;
 
-namespace Nethermind.Evm.Tracing.GethStyle.JavaScript;
+namespace Nethermind.Evm.Tracing.GethStyle.Custom.JavaScript;
 
 public sealed class GethLikeJavaScriptTxTracer : GethLikeTxTracer, ITxTracer
 {
@@ -59,7 +59,7 @@ public sealed class GethLikeJavaScriptTxTracer : GethLikeTxTracer, ITxTracer
     public override GethLikeTxTrace BuildResult()
     {
         GethLikeTxTrace result = base.BuildResult();
-        result.CustomTracerResult = new GethLikeJavaScriptTrace() { Value = _tracer.result(_ctx, _db) };
+        result.CustomTracerResult = new GethLikeCustomTrace() { Value = _tracer.result(_ctx, _db) };
         _resultConstructed = true;
         return result;
     }
@@ -118,13 +118,6 @@ public sealed class GethLikeJavaScriptTxTracer : GethLikeTxTracer, ITxTracer
         }
     }
 
-    public override void ReportOperationError(EvmExceptionType error)
-    {
-        base.ReportOperationError(error);
-        _log.error = GetJavaScriptErrorDescription(error);
-        _tracer.fault(_log, _db);
-    }
-
     private static string? GetJavaScriptErrorDescription(EvmExceptionType evmExceptionType) =>
         evmExceptionType switch
         {
@@ -147,6 +140,13 @@ public sealed class GethLikeJavaScriptTxTracer : GethLikeTxTracer, ITxTracer
             EvmExceptionType.InvalidCode => "invalid code: must not begin with 0xef",
             _ => "error"
         };
+
+    public override void ReportOperationError(EvmExceptionType error)
+    {
+        base.ReportOperationError(error);
+        _log.error = GetJavaScriptErrorDescription(error);
+        _tracer.fault(_log, _db);
+    }
 
     public override void ReportActionEnd(long gas, Address deploymentAddress, ReadOnlyMemory<byte> deployedCode)
     {
