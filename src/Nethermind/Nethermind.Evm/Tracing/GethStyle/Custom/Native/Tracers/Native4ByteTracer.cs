@@ -30,7 +30,7 @@ public sealed class Native4ByteTracer : GethLikeNativeTxTracer
     private Instruction _op;
 
     public Native4ByteTracer(
-        GethTraceOptions options) : base(options)
+        GethTraceOptions options) : base(null, options)
     {
         IsTracingActions = true;
     }
@@ -62,6 +62,11 @@ public sealed class Native4ByteTracer : GethLikeNativeTxTracer
     public override void StartOperation(int depth, long gas, Instruction opcode, int pc, bool isPostMerge = false)
     {
         _op = opcode;
+    }
+
+    public override void SetOperationStack(TraceStack stack)
+    {
+        base.SetOperationStack(stack);
     }
 
     private void CaptureStart(ReadOnlyMemory<byte> input)
