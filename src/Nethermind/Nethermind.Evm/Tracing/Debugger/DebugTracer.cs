@@ -224,8 +224,8 @@ public class DebugTracer : ITxTracer, ITxTracerWrapper, IDisposable
     public void ReportSelfDestruct(Address address, UInt256 balance, Address refundAddress)
         => InnerTracer.ReportSelfDestruct(address, balance, refundAddress);
 
-    public void ReportAction(long gas, UInt256 value, Address from, Address to, ReadOnlyMemory<byte> input, ExecutionType callType, bool isPrecompileCall = false)
-        => InnerTracer.ReportAction(gas, value, from, to, input, callType, isPrecompileCall);
+    public void ReportAction(in ExecutionEnvironment env, long gas, Address from, Address to, ReadOnlyMemory<byte> input, ExecutionType callType, bool isPrecompileCall = false)
+        => InnerTracer.ReportAction(env, gas, from, to, input, callType, isPrecompileCall);
 
     public void ReportActionEnd(long gas, ReadOnlyMemory<byte> output)
         => InnerTracer.ReportActionEnd(gas, output);

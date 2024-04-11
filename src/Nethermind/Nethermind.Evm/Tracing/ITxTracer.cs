@@ -324,15 +324,15 @@ public interface ITxTracer : IWorldStateTracer, IDisposable
     /// <summary>
     ///
     /// </summary>
+    /// <param name="env"></param>
     /// <param name="gas"></param>
-    /// <param name="value"></param>
     /// <param name="from"></param>
     /// <param name="to"></param>
     /// <param name="input"></param>
     /// <param name="callType"></param>
     /// <param name="isPrecompileCall"></param>
     /// <remarks>Depends on <see cref="IsTracingActions"/></remarks>
-    void ReportAction(long gas, UInt256 value, Address from, Address to, ReadOnlyMemory<byte> input, ExecutionType callType, bool isPrecompileCall = false);
+    void ReportAction(in ExecutionEnvironment env, long gas, Address from, Address to, ReadOnlyMemory<byte> input, ExecutionType callType, bool isPrecompileCall = false);
 
     /// <summary>
     ///

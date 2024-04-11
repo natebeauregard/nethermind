@@ -330,12 +330,12 @@ public class CancellationTxTracer : ITxTracer, ITxTracerWrapper
         }
     }
 
-    public void ReportAction(long gas, UInt256 value, Address from, Address to, ReadOnlyMemory<byte> input, ExecutionType callType, bool isPrecompileCall = false)
+    public void ReportAction(in ExecutionEnvironment env, long gas, Address from, Address to, ReadOnlyMemory<byte> input, ExecutionType callType, bool isPrecompileCall = false)
     {
         _token.ThrowIfCancellationRequested();
         if (_innerTracer.IsTracingActions)
         {
-            _innerTracer.ReportAction(gas, value, from, to, input, callType, isPrecompileCall);
+            _innerTracer.ReportAction(env, gas, from, to, input, callType, isPrecompileCall);
         }
     }
 

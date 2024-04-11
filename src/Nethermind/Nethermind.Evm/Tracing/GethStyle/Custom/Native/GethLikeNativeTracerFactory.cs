@@ -13,11 +13,11 @@ public static class GethLikeNativeTracerFactory
 {
     static GethLikeNativeTracerFactory() => RegisterNativeTracers();
 
-    private static readonly Dictionary<string, Func<IWorldState?, NativeTracerContext?, GethTraceOptions, GethLikeNativeTxTracer>> _tracers = new();
+    private static readonly Dictionary<string, Func<IWorldState?, GethTraceOptions, GethLikeNativeTxTracer>> _tracers = new();
 
-    public static GethLikeNativeTxTracer CreateTracer(GethTraceOptions options, IWorldState? worldState = null, NativeTracerContext? context = null) =>
-        _tracers.TryGetValue(options.Tracer, out Func<IWorldState?, NativeTracerContext?, GethTraceOptions, GethLikeNativeTxTracer> tracerFunc)
-        ? tracerFunc(worldState, context, options)
+    public static GethLikeNativeTxTracer CreateTracer(GethTraceOptions options, IWorldState? worldState = null) =>
+        _tracers.TryGetValue(options.Tracer, out Func<IWorldState?, GethTraceOptions, GethLikeNativeTxTracer> tracerFunc)
+        ? tracerFunc(worldState, options)
         : throw new ArgumentException($"Unknown tracer: {options.Tracer}");
 
     public static bool IsNativeTracer(string tracerName)
@@ -27,11 +27,11 @@ public static class GethLikeNativeTracerFactory
 
     private static void RegisterNativeTracers()
     {
-        RegisterTracer(Native4ByteTracer.FourByteTracer, (_, _, options) => new Native4ByteTracer(options));
-        RegisterTracer(NativePrestateTracer.PrestateTracer, (worldState, context, options) => new NativePrestateTracer(worldState, context, options));
+        RegisterTracer(Native4ByteTracer.FourByteTracer, (_, options) => new Native4ByteTracer(options));
+        RegisterTracer(NativePrestateTracer.PrestateTracer, (worldState, options) => new NativePrestateTracer(worldState, options));
     }
 
-    private static void RegisterTracer(string tracerName, Func<IWorldState?, NativeTracerContext?, GethTraceOptions, GethLikeNativeTxTracer> tracerFunc)
+    private static void RegisterTracer(string tracerName, Func<IWorldState?, GethTraceOptions, GethLikeNativeTxTracer> tracerFunc)
     {
         _tracers.Add(tracerName, tracerFunc);
     }

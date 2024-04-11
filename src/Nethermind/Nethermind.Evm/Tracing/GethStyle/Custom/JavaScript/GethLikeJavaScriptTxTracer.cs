@@ -64,13 +64,14 @@ public sealed class GethLikeJavaScriptTxTracer : GethLikeTxTracer, ITxTracer
         return result;
     }
 
-    public override void ReportAction(long gas, UInt256 value, Address from, Address to, ReadOnlyMemory<byte> input, ExecutionType callType, bool isPrecompileCall = false)
+    public override void ReportAction(in ExecutionEnvironment env, long gas, Address from, Address to, ReadOnlyMemory<byte> input, ExecutionType callType, bool isPrecompileCall = false)
     {
         _depth++;
 
-        base.ReportAction(gas, value, from, to, input, callType, isPrecompileCall);
+        base.ReportAction(env, gas, from, to, input, callType, isPrecompileCall);
 
         bool isAnyCreate = callType.IsAnyCreate();
+        UInt256 value = env.Value;
         if (_depth == 0)
         {
             _ctx.type = isAnyCreate ? "CREATE" : "CALL";

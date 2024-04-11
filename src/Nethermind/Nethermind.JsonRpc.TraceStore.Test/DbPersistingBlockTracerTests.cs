@@ -12,6 +12,7 @@ using Nethermind.Db;
 using Nethermind.Evm;
 using Nethermind.Evm.Tracing;
 using Nethermind.Evm.Tracing.ParityStyle;
+using Nethermind.Int256;
 using Nethermind.Logging;
 using NUnit.Framework;
 
@@ -54,8 +55,8 @@ public class DbPersistingBlockTracerTests
         Test test = new();
         (Hash256 hash, List<ParityLikeTxTrace> traces) = test.Trace(tracer =>
             {
-                tracer.ReportAction(100, 50, TestItem.AddressA, TestItem.AddressB, TestItem.RandomDataA, ExecutionType.CALL);
-                tracer.ReportAction(80, 20, TestItem.AddressB, TestItem.AddressC, TestItem.RandomDataC, ExecutionType.CREATE);
+                tracer.ReportAction(CreateEnvWithValue(50), 100, TestItem.AddressA, TestItem.AddressB, TestItem.RandomDataA, ExecutionType.CALL);
+                tracer.ReportAction(CreateEnvWithValue(20),80, TestItem.AddressB, TestItem.AddressC, TestItem.RandomDataC, ExecutionType.CREATE);
                 tracer.ReportActionEnd(60, TestItem.RandomDataD);
                 tracer.ReportActionEnd(50, TestItem.RandomDataB);
             }
@@ -113,7 +114,7 @@ public class DbPersistingBlockTracerTests
             {
                 for (int i = 0; i < depth; i++)
                 {
-                    tracer.ReportAction(100, 50, TestItem.AddressA, TestItem.AddressB, TestItem.RandomDataA, ExecutionType.CALL);
+                    tracer.ReportAction(CreateEnvWithValue(50), 100, TestItem.AddressA, TestItem.AddressB, TestItem.RandomDataA, ExecutionType.CALL);
                 }
 
                 for (int i = 0; i < depth; i++)
@@ -133,4 +134,6 @@ public class DbPersistingBlockTracerTests
 
         checkedDepth.Should().Be(depth);
     }
+
+    private static ExecutionEnvironment CreateEnvWithValue(UInt256 value) => new ExecutionEnvironment(value);
 }

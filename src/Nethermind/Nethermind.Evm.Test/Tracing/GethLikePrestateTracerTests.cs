@@ -6,7 +6,6 @@ using Nethermind.Core;
 using Nethermind.Core.Extensions;
 using Nethermind.Core.Test.Builders;
 using Nethermind.Evm.Tracing.GethStyle;
-using Nethermind.Evm.Tracing.GethStyle.Custom.Native;
 using Nethermind.Evm.Tracing.GethStyle.Custom.Native.Prestate;
 using Nethermind.Serialization.Json;
 using Nethermind.Specs;
@@ -19,20 +18,15 @@ namespace Nethermind.Evm.Test.Tracing;
 public class GethLikePrestateTracerTests : VirtualMachineTestsBase
 {
     private static readonly JsonSerializerOptions Options = EthereumJsonSerializer.JsonOptionsIndented;
+    private static readonly SenderRecipientAndMiner TxAddresses = new();
 
     [Test]
     public void Test_PrestateTrace_SStore()
     {
-        TestState.CreateAccount(Address.Zero, 100.Ether());
-        NativeTracerContext context = new(Address.Zero)
-        {
-            From = TestItem.AddressA,
-            To = TestItem.AddressB
-        };
         StorageCell storageCell = new StorageCell(TestItem.AddressB, 32);
         byte[] storageData = Bytes.FromHexString("123456789abcdef");
         TestState.Set(storageCell, storageData);
-        NativePrestateTracer tracer = new(TestState, context, GethTraceOptions.Default with { Tracer = NativePrestateTracer.PrestateTracer });
+        NativePrestateTracer tracer = new(TestState, GethTraceOptions.Default with { Tracer = NativePrestateTracer.PrestateTracer });
 
         byte[] sstoreCode = Prepare.EvmCode
             .PushData(SampleHexData1.PadLeft(64, '0'))
@@ -47,22 +41,25 @@ public class GethLikePrestateTracerTests : VirtualMachineTestsBase
         GethLikeTxTrace prestateTrace = Execute(
                 tracer,
                 sstoreCode,
-                MainnetSpecProvider.CancunActivation)
+                MainnetSpecProvider.CancunActivation,
+                TxAddresses)
             .BuildResult();
         const string expectedPrestateTrace = """
 {
   "0xb7705ae4c6f81b66cdb323c65f4e8133690fc099": {
-    "balance": "0x0"
+    "balance": "0x56bc75e2d630e795f",
+    "nonce": 1
   },
   "0x942921b14f1b1c385cd7e0cc2ef7abe5598c8358": {
-    "balance": "0x0",
+    "balance": "0x56bc75e2d63100000",
+    "code": "0x7f0000000000000000000000000000000000000000000000000000000000a012346000557f0000000000000000000000000000000000000000000000000000000000b1567860205500",
     "storage": {
       "0x0000000000000000000000000000000000000000000000000000000000000000": "0x0000000000000000000000000000000000000000000000000000000000000000",
       "0x0000000000000000000000000000000000000000000000000000000000000020": "0x0000000000000000000000000000000000000000000000000123456789abcdef"
     }
   },
-  "0x0000000000000000000000000000000000000000": {
-    "balance": "0x56bc75e2d63100000"
+  "0x475674cb523a0a2736b7f7534390288fce16982c": {
+    "balance": "0x0"
   }
 }
 """;
@@ -72,13 +69,7 @@ public class GethLikePrestateTracerTests : VirtualMachineTestsBase
     [Test]
     public void Test_PrestateTrace_NestedCalls()
     {
-        TestState.CreateAccount(Address.Zero, 100.Ether());
-        NativeTracerContext context = new(Address.Zero)
-        {
-            From = TestItem.AddressA,
-            To = TestItem.AddressB
-        };
-        NativePrestateTracer tracer = new(TestState, context, GethTraceOptions.Default with { Tracer = NativePrestateTracer.PrestateTracer });
+        NativePrestateTracer tracer = new(TestState, GethTraceOptions.Default with { Tracer = NativePrestateTracer.PrestateTracer });
 
         byte[] deployedCode = new byte[3];
 
@@ -101,18 +92,21 @@ public class GethLikePrestateTracerTests : VirtualMachineTestsBase
         GethLikeTxTrace prestateTrace = Execute(
                 tracer,
                 code,
-                MainnetSpecProvider.CancunActivation)
+                MainnetSpecProvider.CancunActivation,
+                TxAddresses)
             .BuildResult();
         const string expectedPrestateTrace = """
 {
   "0xb7705ae4c6f81b66cdb323c65f4e8133690fc099": {
-    "balance": "0x0"
+    "balance": "0x56bc75e2d630e795f",
+    "nonce": 1
   },
   "0x942921b14f1b1c385cd7e0cc2ef7abe5598c8358": {
-    "balance": "0x0"
+    "balance": "0x56bc75e2d63100000",
+    "code": "0x60006000600060007376e68a8696537e4141926f3e528733af9e237d6961c350f400"
   },
-  "0x0000000000000000000000000000000000000000": {
-    "balance": "0x56bc75e2d63100000"
+  "0x475674cb523a0a2736b7f7534390288fce16982c": {
+    "balance": "0x0"
   },
   "0x76e68a8696537e4141926f3e528733af9e237d69": {
     "balance": "0xde0b6b3a7640000",
@@ -129,13 +123,7 @@ public class GethLikePrestateTracerTests : VirtualMachineTestsBase
     [Test]
     public void Test_PrestateTrace_Create2()
     {
-        TestState.CreateAccount(Address.Zero, 100.Ether());
-        NativeTracerContext context = new(Address.Zero)
-        {
-            From = TestItem.AddressA,
-            To = TestItem.AddressB
-        };
-        NativePrestateTracer tracer = new(TestState, context, GethTraceOptions.Default with { Tracer = NativePrestateTracer.PrestateTracer });
+        NativePrestateTracer tracer = new(TestState, GethTraceOptions.Default with { Tracer = NativePrestateTracer.PrestateTracer });
 
         byte[] salt = { 4, 5, 6 };
 
@@ -157,18 +145,21 @@ public class GethLikePrestateTracerTests : VirtualMachineTestsBase
         GethLikeTxTrace prestateTrace = Execute(
                 tracer,
                 code,
-                MainnetSpecProvider.CancunActivation)
+                MainnetSpecProvider.CancunActivation,
+                TxAddresses)
             .BuildResult();
         const string expectedPrestateTrace = """
 {
   "0xb7705ae4c6f81b66cdb323c65f4e8133690fc099": {
-    "balance": "0x0"
+    "balance": "0x56bc75e2d630e795f",
+    "nonce": 1
   },
   "0x942921b14f1b1c385cd7e0cc2ef7abe5598c8358": {
-    "balance": "0x0"
+    "balance": "0x56bc75e2d63100000",
+    "code": "0x600060006000600060007376e68a8696537e4141926f3e528733af9e237d6961c350f1"
   },
-  "0x0000000000000000000000000000000000000000": {
-    "balance": "0x56bc75e2d63100000"
+  "0x475674cb523a0a2736b7f7534390288fce16982c": {
+    "balance": "0x0"
   },
   "0x76e68a8696537e4141926f3e528733af9e237d69": {
     "balance": "0xde0b6b3a7640000",
@@ -185,31 +176,28 @@ public class GethLikePrestateTracerTests : VirtualMachineTestsBase
     [Test]
     public void Test_PrestateTrace_ExistingAccount()
     {
-        TestState.CreateAccount(Address.Zero, 100.Ether());
-        NativeTracerContext context = new(Address.Zero)
-        {
-            From = TestItem.AddressA,
-            To = TestItem.AddressB
-        };
         TestState.CreateAccount(TestItem.AddressC, 5.Ether());
         TestState.IncrementNonce(TestItem.AddressC);
-        NativePrestateTracer tracer = new(TestState, context, GethTraceOptions.Default with { Tracer = NativePrestateTracer.PrestateTracer });
+        NativePrestateTracer tracer = new(TestState, GethTraceOptions.Default with { Tracer = NativePrestateTracer.PrestateTracer });
 
         GethLikeTxTrace prestateTrace = Execute(
                 tracer,
                 Balance(),
-                MainnetSpecProvider.CancunActivation)
+                MainnetSpecProvider.CancunActivation,
+                TxAddresses)
             .BuildResult();
         const string expectedPrestateTrace = """
 {
   "0xb7705ae4c6f81b66cdb323c65f4e8133690fc099": {
-    "balance": "0x0"
+    "balance": "0x56bc75e2d630e795f",
+    "nonce": 1
   },
   "0x942921b14f1b1c385cd7e0cc2ef7abe5598c8358": {
-    "balance": "0x0"
+    "balance": "0x56bc75e2d63100000",
+    "code": "0x7f00000000000000000000000076e68a8696537e4141926f3e528733af9e237d693100"
   },
-  "0x0000000000000000000000000000000000000000": {
-    "balance": "0x56bc75e2d63100000"
+  "0x475674cb523a0a2736b7f7534390288fce16982c": {
+    "balance": "0x0"
   },
   "0x76e68a8696537e4141926f3e528733af9e237d69": {
     "balance": "0x4563918244f40000",
@@ -223,28 +211,30 @@ public class GethLikePrestateTracerTests : VirtualMachineTestsBase
     [Test]
     public void Test_PrestateTrace_EmptyTo()
     {
-        TestState.CreateAccount(Address.Zero, 100.Ether());
-        NativeTracerContext context = new(Address.Zero)
+        NativePrestateTracer tracer = new(TestState, GethTraceOptions.Default with { Tracer = NativePrestateTracer.PrestateTracer });
+        SenderRecipientAndMiner txAddressesNoRecipient = new SenderRecipientAndMiner()
         {
-            From = TestItem.AddressA
+            SenderKey = SenderKey,
+            MinerKey = MinerKey
         };
-        NativePrestateTracer tracer = new(TestState, context, GethTraceOptions.Default with { Tracer = NativePrestateTracer.PrestateTracer });
-
         GethLikeTxTrace prestateTrace = Execute(
                 tracer,
                 Balance(),
-                MainnetSpecProvider.CancunActivation)
+                MainnetSpecProvider.CancunActivation,
+                txAddressesNoRecipient)
             .BuildResult();
         const string expectedPrestateTrace = """
 {
   "0xb7705ae4c6f81b66cdb323c65f4e8133690fc099": {
-    "balance": "0x0"
+    "balance": "0x56bc75e2d630e795f",
+    "nonce": 1
   },
-  "0x24cd2edba056b7c654a50e8201b619d4f624fdda": {
-    "balance": "0x0"
+  "0x942921b14f1b1c385cd7e0cc2ef7abe5598c8358": {
+    "balance": "0x56bc75e2d63100000",
+    "code": "0x7f00000000000000000000000076e68a8696537e4141926f3e528733af9e237d693100"
   },
-  "0x0000000000000000000000000000000000000000": {
-    "balance": "0x56bc75e2d63100000"
+  "0x475674cb523a0a2736b7f7534390288fce16982c": {
+    "balance": "0x0"
   },
   "0x76e68a8696537e4141926f3e528733af9e237d69": {
     "balance": "0x0"

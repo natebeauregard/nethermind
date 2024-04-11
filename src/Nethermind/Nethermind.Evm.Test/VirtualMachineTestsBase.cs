@@ -133,9 +133,9 @@ public class VirtualMachineTestsBase
         return tracer;
     }
 
-    protected T Execute<T>(T tracer, byte[] code, ForkActivation? forkActivation = null) where T : ITxTracer
+    protected T Execute<T>(T tracer, byte[] code, ForkActivation? forkActivation = null, SenderRecipientAndMiner? senderRecipientAndMiner = null) where T : ITxTracer
     {
-        (Block block, Transaction transaction) = PrepareTx(forkActivation ?? Activation, 100000, code);
+        (Block block, Transaction transaction) = PrepareTx(forkActivation ?? Activation, 100000, code, senderRecipientAndMiner);
         _processor.Execute(transaction, block.Header, tracer);
         return tracer;
     }

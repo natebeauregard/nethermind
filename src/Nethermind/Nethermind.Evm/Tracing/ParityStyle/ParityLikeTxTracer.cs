@@ -387,16 +387,16 @@ namespace Nethermind.Evm.Tracing.ParityStyle
             change = new ParityStateChange<byte[]>(before, after);
         }
 
-        public override void ReportAction(long gas, UInt256 value, Address from, Address to, ReadOnlyMemory<byte> input, ExecutionType callType, bool isPrecompileCall = false)
+        public override void ReportAction(in ExecutionEnvironment env, long gas, Address from, Address to, ReadOnlyMemory<byte> input, ExecutionType callType, bool isPrecompileCall = false)
         {
             ParityTraceAction action = new()
             {
                 IsPrecompiled = isPrecompileCall,
                 // ignore pre compile calls with Zero value that originates from contracts
-                IncludeInTrace = !(isPrecompileCall && callType != ExecutionType.TRANSACTION && value.IsZero),
+                IncludeInTrace = !(isPrecompileCall && callType != ExecutionType.TRANSACTION && env.Value.IsZero),
                 From = from,
                 To = to,
-                Value = value,
+                Value = env.Value,
                 Input = input.ToArray(),
                 Gas = gas,
                 CallType = GetCallType(callType),

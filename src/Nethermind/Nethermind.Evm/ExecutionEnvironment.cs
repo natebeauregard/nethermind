@@ -33,6 +33,11 @@ namespace Nethermind.Evm
             CallDepth = callDepth;
         }
 
+        public ExecutionEnvironment(UInt256 value)
+        {
+            Value = value;
+        }
+
         /// <summary>
         /// Parsed bytecode for the current call.
         /// </summary>

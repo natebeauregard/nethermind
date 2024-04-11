@@ -23,7 +23,6 @@ public sealed class NativePrestateTracer : GethLikeNativeTxTracer
 
     public NativePrestateTracer(
         IWorldState worldState,
-        NativeTracerContext? context,
         GethTraceOptions options) : base(options)
     {
         IsTracingRefunds = true;
@@ -34,10 +33,6 @@ public sealed class NativePrestateTracer : GethLikeNativeTxTracer
         _worldState = worldState;
 
         _prestate = new Dictionary<AddressAsKey, NativePrestateTracerAccount>();
-        if (context is not null)
-        {
-            LookupInitialTransactionAccounts(context.Value);
-        }
     }
 
     protected override GethLikeTxTrace CreateTrace() => new();
@@ -48,6 +43,25 @@ public sealed class NativePrestateTracer : GethLikeNativeTxTracer
 
         result.CustomTracerResult = new GethLikeCustomTrace() { Value = _prestate };
         return result;
+    }
+
+    public override void ReportAction(in ExecutionEnvironment env, long gas, Address from, Address to, ReadOnlyMemory<byte> input, ExecutionType callType, bool isPrecompileCall = false)
+    {
+        base.ReportAction(in env, gas, from, to, input, callType, isPrecompileCall);
+
+        if (Depth == 0)
+        {
+            TxExecutionContext txContext = env.TxExecutionContext;
+            Address txOrigin = txContext.Origin;
+            Address? txDestination = txContext.Destination;
+
+            // Lookup initial transaction accounts
+            LookupAccount(txOrigin);
+            LookupAccount(txDestination ?? ContractAddress.From(txOrigin, _prestate[txOrigin].Nonce ?? 0));
+
+            // Look up client beneficiary address as well
+            LookupAccount(env.GetBlockBeneficiary() ?? Address.Zero);
+        }
     }
 
     public override void StartOperation(in ExecutionEnvironment env, long gas, Instruction opcode, int pc)
@@ -137,15 +151,6 @@ public sealed class NativePrestateTracer : GethLikeNativeTxTracer
     {
         base.ReportOperationError(error);
         _error = error;
-    }
-
-    private void LookupInitialTransactionAccounts(in NativeTracerContext context)
-    {
-        LookupAccount(context.From);
-        LookupAccount(context.To ?? ContractAddress.From(context.From, _prestate[context.From].Nonce ?? 0));
-
-        // Look up client beneficiary address as well
-        LookupAccount(context.Beneficiary ?? Address.Zero);
     }
 
     private void LookupAccount(Address addr)
