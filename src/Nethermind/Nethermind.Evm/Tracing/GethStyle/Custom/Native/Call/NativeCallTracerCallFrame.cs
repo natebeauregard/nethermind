@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Nethermind.Core;
+using Nethermind.Core.Collections;
 using Nethermind.Int256;
 
 namespace Nethermind.Evm.Tracing.GethStyle.Custom.Native.Call;
@@ -21,17 +22,17 @@ public class NativeCallTracerCallFrame
 
     public Address? To { get; set; }
 
-    public byte[]? Input { get; set; }
+    public ArrayPoolList<byte>? Input { get; set; }
 
-    public byte[]? Output { get; set; }
+    public ArrayPoolList<byte>? Output { get; set; }
 
     public string? Error { get; set; }
 
     public string? RevertReason { get; set; }
 
-    public List<NativeCallTracerCallFrame> Calls { get; set; }
+    public ArrayPoolList<NativeCallTracerCallFrame> Calls { get; set; }
 
-    public List<NativeCallTracerLogEntry>? Logs { get; set; }
+    public ArrayPoolList<NativeCallTracerLogEntry>? Logs { get; set; }
 
     public UInt256? Value { get; set; }
 }

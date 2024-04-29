@@ -45,7 +45,7 @@ public class NativeCallTracerCallFrameConverter : JsonConverter<NativeCallTracer
             writer.WritePropertyName("input"u8);
             JsonSerializer.Serialize(writer, value.Input, options);
 
-            if (value.Output?.Length > 0)
+            if (value.Output?.Count > 0)
             {
                 writer.WritePropertyName("output"u8);
                 JsonSerializer.Serialize(writer, value.Output, options);
